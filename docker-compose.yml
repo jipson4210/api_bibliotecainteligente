@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: biblioteca-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_123
+      MYSQL_DATABASE: biblioteca_inteligente
+      MYSQL_USER: biblioteca_user
+      MYSQL_PASSWORD: biblioteca_pass_123
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - mysql_data:/var/lib/mysql
+    networks:
+      - biblioteca-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: biblioteca-api
+    environment:
+      DB_HOST: mysql
+      DB_USER: biblioteca_user
+      DB_PASSWORD: biblioteca_pass_123
+      DB_NAME: biblioteca_inteligente
+      DB_PORT: 3306
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - biblioteca-network
+    restart: unless-stopped
+    working_dir: /app
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  biblioteca-network:
+    driver: bridge

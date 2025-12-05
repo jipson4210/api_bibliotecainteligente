@@ -1,0 +1,27 @@
+{
+  "name": "biblioteca-inteligente-api",
+  "version": "1.0.0",
+  "description": "API Backend para Biblioteca Inteligente (Arquitectura DDD)",
+  "main": "boot.server.js",
+  "scripts": {
+    "start": "node boot.server.js",
+    "dev": "nodemon boot.server.js"
+  },
+  "keywords": [
+    "biblioteca",
+    "inteligente",
+    "api",
+    "ddd"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "mysql2": "^3.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
