@@ -3,13 +3,14 @@
 // Modelo de dominio para Usuario
 
 class User {
-  constructor(nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento, id = null) {
+  constructor(nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento, contrasena, id = null) {
     this.id = id;
     this.nombre = nombre;
     this.apellido = apellido;
     this.correoElectronico = correoElectronico;
     this.numeroCelular = numeroCelular;
     this.fechaNacimiento = fechaNacimiento;
+    this.contrasena = contrasena;
   }
 
   validate() {
@@ -35,6 +36,10 @@ class User {
 
     if (!this.fechaNacimiento) {
       errors.fechaNacimiento = 'La fecha de nacimiento es requerida';
+    }
+
+    if (this.contrasena && this.contrasena.length < 6) {
+      errors.contrasena = 'La contraseña debe tener al menos 6 caracteres';
     }
 
     return Object.keys(errors).length === 0 ? { valid: true } : { valid: false, errors };

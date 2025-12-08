@@ -5,19 +5,41 @@ const express = require('express');
 const router = express.Router();
 const userService = require('../application');
 
+// POST: Login de usuario
+router.post('/login', async (req, res) => {
+  try {
+    const { correoElectronico, contrasena } = req.body;
+
+    if (!correoElectronico || !contrasena) {
+      return res.status(400).json({ 
+        message: 'El correo electrónico y la contraseña son requeridos'
+      });
+    }
+
+    const result = await userService.loginUser(correoElectronico, contrasena);
+    res.json(result);
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ message: error.message });
+    }
+    console.error('Error al iniciar sesión:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
 // POST: Registrar nuevo usuario
 router.post('/register', async (req, res) => {
   try {
-    const { nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento } = req.body;
+    const { nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento, contrasena } = req.body;
 
-    if (!nombre || !apellido || !correoElectronico || !numeroCelular || !fechaNacimiento) {
+    if (!nombre || !apellido || !correoElectronico || !numeroCelular || !fechaNacimiento || !contrasena) {
       return res.status(400).json({ 
         message: 'Todos los campos son requeridos'
       });
     }
 
     const result = await userService.registerUser({
-      nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento
+      nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento, contrasena
     });
 
     res.status(201).json(result);
@@ -77,7 +99,7 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento } = req.body;
+    const { nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento, contrasena } = req.body;
 
     if (!nombre || !apellido || !correoElectronico || !numeroCelular || !fechaNacimiento) {
       return res.status(400).json({ 
@@ -86,7 +108,7 @@ router.put('/:id', async (req, res) => {
     }
 
     const result = await userService.updateUser(id, {
-      nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento
+      nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento, contrasena
     });
 
     res.json(result);

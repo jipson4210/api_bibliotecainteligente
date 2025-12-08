@@ -3,6 +3,7 @@
 
 const User = require('../domain/domain.User');
 const pool = require('../infrastructure/infrastructure.Database');
+const bcrypt = require('bcryptjs');
 
 class UserApplicationService {
   
@@ -14,7 +15,8 @@ class UserApplicationService {
         userData.apellido,
         userData.correoElectronico,
         userData.numeroCelular,
-        userData.fechaNacimiento
+        userData.fechaNacimiento,
+        userData.contrasena
       );
 
       const validation = user.validate();
@@ -34,13 +36,16 @@ class UserApplicationService {
       // Convertir la fecha al formato YYYY-MM-DD
       const fechaFormato = this.formatearFecha(userData.fechaNacimiento);
 
+      // Hash de la contraseña
+      const hashedPassword = await bcrypt.hash(userData.contrasena, 10);
+
       const [result] = await connection.query(
-        'INSERT INTO usuarios (nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento) VALUES (?, ?, ?, ?, ?)',
-        [userData.nombre, userData.apellido, userData.correoElectronico, userData.numeroCelular, fechaFormato]
+        'INSERT INTO usuarios (nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento, contrasena) VALUES (?, ?, ?, ?, ?, ?)',
+        [userData.nombre, userData.apellido, userData.correoElectronico, userData.numeroCelular, fechaFormato, hashedPassword]
       );
 
       const [newUser] = await connection.query(
-        'SELECT * FROM usuarios WHERE id = ?',
+        'SELECT id, nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento, createdAt FROM usuarios WHERE id = ?',
         [result.insertId]
       );
 
@@ -54,10 +59,45 @@ class UserApplicationService {
     }
   }
 
+  async loginUser(email, password) {
+    const connection = await pool.getConnection();
+    try {
+      if (!email || !password) {
+        throw { status: 400, message: 'El correo y la contraseña son requeridos' };
+      }
+
+      const [users] = await connection.query(
+        'SELECT id, nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento, contrasena, createdAt FROM usuarios WHERE correoElectronico = ?',
+        [email]
+      );
+
+      if (users.length === 0) {
+        throw { status: 401, message: 'Correo o contraseña incorrectos' };
+      }
+
+      const user = users[0];
+      const passwordMatch = await bcrypt.compare(password, user.contrasena);
+
+      if (!passwordMatch) {
+        throw { status: 401, message: 'Correo o contraseña incorrectos' };
+      }
+
+      const { contrasena, ...userWithoutPassword } = user;
+
+      return {
+        message: 'Login exitoso',
+        user: userWithoutPassword
+      };
+
+    } finally {
+      connection.release();
+    }
+  }
+
   async getAllUsers() {
     const connection = await pool.getConnection();
     try {
-      const [users] = await connection.query('SELECT * FROM usuarios ORDER BY createdAt DESC');
+      const [users] = await connection.query('SELECT id, nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento, createdAt FROM usuarios ORDER BY createdAt DESC');
       return { total: users.length, users };
     } finally {
       connection.release();
@@ -67,7 +107,7 @@ class UserApplicationService {
   async getUserById(id) {
     const connection = await pool.getConnection();
     try {
-      const [users] = await connection.query('SELECT * FROM usuarios WHERE id = ?', [id]);
+      const [users] = await connection.query('SELECT id, nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento, createdAt FROM usuarios WHERE id = ?', [id]);
       if (users.length === 0) {
         throw { status: 404, message: 'Usuario no encontrado' };
       }
@@ -85,7 +125,8 @@ class UserApplicationService {
         userData.apellido,
         userData.correoElectronico,
         userData.numeroCelular,
-        userData.fechaNacimiento
+        userData.fechaNacimiento,
+        userData.contrasena || null
       );
 
       const validation = user.validate();
@@ -107,15 +148,22 @@ class UserApplicationService {
         throw { status: 409, message: 'El correo electrónico ya está registrado por otro usuario' };
       }
 
-      // Convertir la fecha al formato YYYY-MM-DD
       const fechaFormato = this.formatearFecha(userData.fechaNacimiento);
+      let query = 'UPDATE usuarios SET nombre = ?, apellido = ?, correoElectronico = ?, numeroCelular = ?, fechaNacimiento = ?';
+      let params = [userData.nombre, userData.apellido, userData.correoElectronico, userData.numeroCelular, fechaFormato];
 
-      await connection.query(
-        'UPDATE usuarios SET nombre = ?, apellido = ?, correoElectronico = ?, numeroCelular = ?, fechaNacimiento = ? WHERE id = ?',
-        [userData.nombre, userData.apellido, userData.correoElectronico, userData.numeroCelular, fechaFormato, id]
-      );
+      if (userData.contrasena) {
+        const hashedPassword = await bcrypt.hash(userData.contrasena, 10);
+        query += ', contrasena = ?';
+        params.push(hashedPassword);
+      }
 
-      const [updatedUser] = await connection.query('SELECT * FROM usuarios WHERE id = ?', [id]);
+      query += ' WHERE id = ?';
+      params.push(id);
+
+      await connection.query(query, params);
+
+      const [updatedUser] = await connection.query('SELECT id, nombre, apellido, correoElectronico, numeroCelular, fechaNacimiento, createdAt FROM usuarios WHERE id = ?', [id]);
       return { message: 'Usuario actualizado exitosamente', user: updatedUser[0] };
 
     } finally {
@@ -158,17 +206,14 @@ class UserApplicationService {
     }
   }
 
-  // Convertir fecha ISO (2023-11-19T05:00:00.000Z) a formato MySQL (YYYY-MM-DD)
   formatearFecha(fecha) {
     if (!fecha) return null;
     
     try {
-      // Si es string ISO, tomar solo la parte de la fecha
       if (typeof fecha === 'string') {
-        return fecha.split('T')[0]; // '1991-11-19T05:00:00.000Z' -> '1991-11-19'
+        return fecha.split('T')[0];
       }
       
-      // Si es objeto Date
       if (fecha instanceof Date) {
         const año = fecha.getFullYear();
         const mes = String(fecha.getMonth() + 1).padStart(2, '0');
