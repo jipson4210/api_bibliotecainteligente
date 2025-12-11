@@ -5,13 +5,17 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+// Determine port: prioritize PORT env var, then use 3000 as default
+// IIS with iisnode will set PORT dynamically
+const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
 console.log('=== INICIANDO SERVIDOR ===');
-console.log('NODE_ENV:', process.env.NODE_ENV || 'desarrollo');
-console.log('PORT:', process.env.PORT || 3000);
+console.log('NODE_ENV:', NODE_ENV);
+console.log('PORT:', PORT);
 console.log('DB_HOST:', process.env.DB_HOST || 'localhost');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
@@ -58,6 +62,10 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`✓ Servidor corriendo en puerto ${PORT}`);
   console.log(`✓ Health check: http://localhost:${PORT}/api/health`);
 });
+
+// Timeout para keep-alive en IIS
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;
 
 // Manejo de errores no capturados
 process.on('unhandledRejection', (reason, promise) => {

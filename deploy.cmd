@@ -1,16 +1,48 @@
 @echo off
 setlocal enabledelayedexpansion
 
-echo Cleaning up old node_modules...
+REM Deployment batch file for Azure App Service (Windows/IIS with iisnode)
+REM This script is called by Azure during deployment (.deployment file references this)
+
+echo.
+echo ===================================
+echo Biblioteca Inteligente API Deployment
+echo ===================================
+echo.
+
+REM Get npm path from Node.js installation
+for /f "delims=" %%A in ('where npm') do set NPM_PATH=%%A
+echo NPM Path: %NPM_PATH%
+
+REM Navigate to site\wwwroot (deployment folder)
+cd /d "%DEPLOYMENT_TARGET%"
+
+echo.
+echo Installing production dependencies...
+echo.
+
+REM Clean node_modules if exists (optional - can speed up deployment)
 if exist node_modules (
-  echo Removing node_modules folder...
-  rmdir /s /q node_modules
+  echo Removing existing node_modules...
+  rmdir /s /q node_modules 2>nul
 )
 
-echo Installing production dependencies...
-call npm install --production
+REM Install production dependencies only
+if not exist node_modules (
+  call npm install --production --no-optional
+  if !ERRORLEVEL! neq 0 (
+    echo.
+    echo ERROR: npm install failed with code !ERRORLEVEL!
+    exit /b !ERRORLEVEL!
+  )
+)
 
-echo Starting application...
-call npm start
+echo.
+echo ===================================
+echo Deployment completed successfully!
+echo ===================================
+echo.
+echo NOTE: Application will start automatically via iisnode
+echo.
 
-:EOF
+exit /b 0

@@ -38,5 +38,10 @@ deploy-azure.sh
 deploy.sh
 setup-azure-env.sh
 wsl-docker-setup.sh
-web.config
+startup.sh
+process.json
 README.md
+WINDOWS_DEPLOYMENT.md
+check-prerequisites.cmd
+setup.cmd
+start-dev.cmd
