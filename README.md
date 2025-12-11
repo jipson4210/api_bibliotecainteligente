@@ -336,7 +336,7 @@ DB_PASSWORD=tu_password
 
 ## 🚀 Despliegue
 
-### En Producción
+### En Producción Local
 
 1. Actualiza `.env` con credenciales de producción
 2. Usa variable `NODE_ENV=production`
@@ -344,6 +344,25 @@ DB_PASSWORD=tu_password
 
 ```bash
 NODE_ENV=production npm start
+```
+
+### 🌐 Despliegue en Azure App Service
+
+Para desplegar en Azure App Service, consulta el archivo [AZURE_DEPLOYMENT.md](AZURE_DEPLOYMENT.md) que contiene:
+
+- Requisitos previos
+- Pasos de configuración en Azure
+- Métodos de deployment (Git o ZIP)
+- Configuración de variables de entorno
+- Troubleshooting y monitoreo
+
+**Inicio rápido:**
+```bash
+# Usar el script de deployment (recomendado)
+chmod +x deploy-azure.sh
+./deploy-azure.sh
+
+# O seguir los pasos manuales en AZURE_DEPLOYMENT.md
 ```
 
 ---
