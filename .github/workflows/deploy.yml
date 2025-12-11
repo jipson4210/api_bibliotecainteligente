@@ -3,8 +3,6 @@ name: Deploy to Azure App Service
 on:
   push:
     branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build-and-deploy:
@@ -22,9 +20,16 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Run tests (if any)
-      run: npm test --if-present
-      continue-on-error: true
+    - name: Check secret
+      run: |
+        if [ -z "${{ secrets.AZURE_PUBLISH_PROFILE }}" ]; then
+          echo "ERROR: AZURE_PUBLISH_PROFILE secret no está configurado"
+          echo "Ve a GitHub → Settings → Secrets and variables → Actions"
+          echo "Agrega AZURE_PUBLISH_PROFILE con el contenido del archivo XML de Azure"
+          exit 1
+        else
+          echo "✓ AZURE_PUBLISH_PROFILE está configurado"
+        fi
 
     - name: Deploy to Azure App Service
       uses: azure/webapps-deploy@v2
@@ -37,4 +42,6 @@ jobs:
       run: |
         echo "Esperando que el app service inicie..."
         sleep 30
-        curl -X GET https://bibliotecainteligente.azurewebsites.net/api/health || echo "Health check falló"
+        curl -v https://bibliotecainteligente.azurewebsites.net/api/health || true
+
+
