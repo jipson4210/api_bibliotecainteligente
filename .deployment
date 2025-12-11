@@ -1,4 +1,0 @@
-[config]
-command = deploy.cmd
-SCM_COMMAND_IDLE_TIMEOUT = 600
-SCM_DO_BUILD_DURING_DEPLOYMENT = true

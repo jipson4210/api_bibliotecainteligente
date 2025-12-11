@@ -1,0 +1,177 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║           BIBLIOTECA INTELIGENTE - DDD + AZURE LINUX SETUP              ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+📁 ESTRUCTURA DEL PROYECTO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+api_bibliotecainteligente/
+│
+├── 🚀 boot.server.js          ← PUNTO DE ENTRADA PRINCIPAL
+│   └── Puerto: 8080 (Azure)
+│       Interfaz: 0.0.0.0 (escucha en todas)
+│
+├── 📦 package.json             ← Dependencias Node.js 18
+│
+├── 🔐 .env                     ← Variables locales (NO en Git)
+│
+├── src/                        ← CÓDIGO DDD (4 CAPAS)
+│   │
+│   ├── 🎨 presentation/        ← CAPA DE PRESENTACIÓN
+│   │   ├── index.js            └─ Exporta UserController
+│   │   └── presentation.UserController.js
+│   │                           └─ Rutas HTTP, Controllers
+│   │
+│   ├── ⚙️ application/         ← CAPA DE APLICACIÓN
+│   │   ├── index.js
+│   │   └── application.UserService.js
+│   │                           └─ Casos de uso, Servicios
+│   │
+│   ├── 🏛️ domain/              ← CAPA DE DOMINIO
+│   │   ├── index.js
+│   │   └── domain.User.js
+│   │                           └─ Entidades, Validaciones
+│   │
+│   └── 🗄️ infrastructure/      ← CAPA DE INFRAESTRUCTURA
+│       ├── index.js
+│       └── infrastructure.Database.js
+│                               └─ Conexión MySQL, Pool
+│
+├── 📚 DOCUMENTACIÓN
+│   ├── README.md               ← Descripción general
+│   ├── .env.example            ← Plantilla de variables
+│   ├── DEPLOY_SETUP.md         ← COMIENZA AQUÍ
+│   ├── AZURE_LINUX_DEPLOYMENT.md ← Guía detallada
+│   └── init.sql                ← Script SQL inicial
+│
+├── 🐳 OPCIONAL
+│   ├── Dockerfile.azure        ← Para Docker en Azure
+│   └── .github/workflows/      ← GitHub Actions CI/CD
+│
+└── 🔧 CONFIGURACIÓN
+    ├── .gitignore
+    └── .env.example
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 ARQUITECTURA DDD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌─────────────────────────────────────────────────────────────────┐
+│  HTTP REQUEST                                                   │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                    ┌────────▼──────────┐
+                    │  PRESENTATION     │
+                    │  (Rutas, HTTP)    │
+                    └────────┬──────────┘
+                             │
+                    ┌────────▼──────────┐
+                    │  APPLICATION      │
+                    │  (Casos de Uso)   │
+                    └────────┬──────────┘
+                             │
+                    ┌────────▼──────────┐
+                    │  DOMAIN           │
+                    │  (Validaciones)   │
+                    └────────┬──────────┘
+                             │
+                    ┌────────▼──────────┐
+                    │  INFRASTRUCTURE   │
+                    │  (Base de Datos)  │
+                    └────────┬──────────┘
+                             │
+                    ┌────────▼──────────┐
+                    │  MySQL Database   │
+                    └───────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 DESPLIEGUE RÁPIDO (5 MINUTOS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Crear recursos Azure
+   $ az group create --name biblioteca-rg --location eastus
+   $ az appservice plan create --name biblioteca-plan \
+     --resource-group biblioteca-rg --is-linux --sku B1
+   $ az webapp create --resource-group biblioteca-rg \
+     --plan biblioteca-plan --name bibliotecainteligente \
+     --runtime "node|18"
+
+2. Configurar variables
+   $ az webapp config appsettings set \
+     --resource-group biblioteca-rg \
+     --name bibliotecainteligente \
+     --settings NODE_ENV=production PORT=8080 \
+     DB_HOST=... DB_USER=... DB_PASSWORD=... DB_NAME=...
+
+3. Desplegar (opción ZIP)
+   $ zip -r app.zip . -x "node_modules/*" ".git/*" ".env*"
+   $ az webapp deployment source config-zip \
+     --resource-group biblioteca-rg \
+     --name bibliotecainteligente --src app.zip
+
+4. Verificar
+   $ az webapp log tail --resource-group biblioteca-rg \
+     --name bibliotecainteligente
+   $ curl https://bibliotecainteligente.azurewebsites.net/api/health
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📡 ENDPOINTS API
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET  /api/health                    ← Health check
+GET  /api/users                     ← Listar usuarios
+GET  /api/users/:id                 ← Usuario por ID
+POST /api/users/register            ← Registrar usuario
+POST /api/users/login               ← Login
+PUT  /api/users/:id                 ← Actualizar usuario
+DELETE /api/users/:id               ← Eliminar usuario
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ CHECKLIST FINAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[✓] Punto de entrada: boot.server.js
+[✓] Puerto configurado: 8080
+[✓] Interfaz: 0.0.0.0 (compatible Azure)
+[✓] Estructura DDD en src/
+[✓] Variables de entorno: .env
+[✓] Dependencias: package.json
+[✓] Documentación: AZURE_LINUX_DEPLOYMENT.md
+[✓] Archivos Windows removidos
+[✓] Node.js 18 compatible
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 DOCUMENTACIÓN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Comienza aquí:      DEPLOY_SETUP.md
+Guía completa:      AZURE_LINUX_DEPLOYMENT.md
+Descripción:        README.md
+SQL inicial:        init.sql
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎉 LISTO PARA AZURE LINUX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+URL en Azure:
+  https://bibliotecainteligente.azurewebsites.net/api/health
+
+Pasos siguientes:
+  1. Lee DEPLOY_SETUP.md
+  2. Ejecuta comandos Azure
+  3. Configura variables
+  4. Despliega código
+  5. Verifica logs
+  6. ¡Usa tu API!
+
+Soporte: AZURE_LINUX_DEPLOYMENT.md → Troubleshooting
+
+╔══════════════════════════════════════════════════════════════════════════╗
+║  Versión: 1.0.0 | Arquitectura: DDD | Plataforma: Azure App Service    ║
+╚══════════════════════════════════════════════════════════════════════════╝

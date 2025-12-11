@@ -58,12 +58,15 @@ app.use((err, req, res, next) => {
 
 // Iniciar servidor
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✓ Servidor corriendo en puerto ${PORT}`); // CORREGIDO: usar backticks
-  console.log(`✓ Health check: http://localhost:${PORT}/api/health`); // CORREGIDO: usar backticks
+  const url = `http://0.0.0.0:${PORT}`;
+  console.log(`✓ Servidor corriendo en puerto ${PORT}`);
+  console.log(`✓ Endpoints disponibles:`);
+  console.log(`  - GET  /api/health`);
+  console.log(`  - GET  /api/users`);
+  console.log(`  - POST /api/users/register`);
 });
 
-// Timeout para keep-alive en IIS
-server.keepAliveTimeout = 65000;
+module.exports = server;
 server.headersTimeout = 66000;
 
 // Manejo de errores no capturados
