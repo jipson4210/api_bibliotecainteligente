@@ -1,54 +1,19 @@
-name: Deploy to Azure App Service
+name: Deploy to Azure
 
 on:
   push:
     branches: [ main, develop ]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
     - uses: actions/checkout@v3
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '22'
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Create deployment package (exclude node_modules)
-      run: |
-        mkdir -p deploy
-        # Copiar archivos necesarios
-        cp -r src deploy/
-        cp boot.server.js deploy/
-        cp startup.sh deploy/
-        cp .deployment deploy/
-        cp package.json deploy/
-        cp package-lock.json deploy/
-        
-        # NO copiar node_modules - Azure lo instalará
-        # Crear un .deploymentignore
-        echo "node_modules/" > deploy/.deploymentignore
-        echo ".git/" >> deploy/.deploymentignore
-        echo "*.log" >> deploy/.deploymentignore
-
-    - name: Deploy to Azure App Service
+    
+    - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:
-        app-name: 'bibliotecainteligente'
+        app-name: bibliotecainteligente
         publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
-        package: './deploy'
-
-    - name: Health check
-      run: |
-        echo "Esperando que el app service inicie..."
-        sleep 30
-        curl -v https://bibliotecainteligente.azurewebsites.net/api/health || true
-
-
-
+        package: '.'
