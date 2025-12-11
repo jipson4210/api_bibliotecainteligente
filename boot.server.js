@@ -49,10 +49,22 @@ app.use((req, res) => {
 
 // Manejo de errores global
 app.use((err, req, res, next) => {
-  console.error('Error:', err.stack);
-  res.status(500).json({ 
-    message: 'Error interno del servidor',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  console.error('Error completo:', {
+    message: err.message,
+    code: err.code,
+    errno: err.errno,
+    stack: err.stack
+  });
+  
+  // Responder con más detalles en desarrollo
+  const isProduction = process.env.NODE_ENV === 'production';
+  res.status(err.status || 500).json({ 
+    message: err.message || 'Error interno del servidor',
+    error: isProduction ? undefined : {
+      code: err.code,
+      errno: err.errno,
+      fullMessage: err.message
+    }
   });
 });
 

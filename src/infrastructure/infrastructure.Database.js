@@ -13,8 +13,17 @@ const poolConfig = {
   port: process.env.DB_PORT || 3306,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  enableKeepAlive: true,
+  keepAliveInitialDelayMs: 0
 };
+
+// Log de configuración (sin contraseña)
+console.log('📊 Configuración de Base de Datos:');
+console.log(`  Host: ${poolConfig.host}`);
+console.log(`  Puerto: ${poolConfig.port}`);
+console.log(`  Usuario: ${poolConfig.user}`);
+console.log(`  Base de datos: ${poolConfig.database}`);
 
 // Configurar SSL para Azure
 if (process.env.DB_SSL_CA) {
@@ -23,27 +32,40 @@ if (process.env.DB_SSL_CA) {
     poolConfig.ssl = {
       ca: fs.readFileSync(certPath)
     };
+    console.log(`  SSL: Certificado cargado desde ${certPath}`);
   } else {
-    console.warn(`⚠ Archivo de certificado no encontrado: ${certPath}`);
+    console.warn(`⚠️  Certificado no encontrado: ${certPath}`);
   }
 } else if (process.env.DB_HOST && process.env.DB_HOST.includes('azure')) {
-  // Para Azure, usar SSL sin validar certificado si no se proporciona archivo
   poolConfig.ssl = {
     rejectUnauthorized: false
   };
+  console.log('  SSL: Habilitado (sin validar certificado - Azure)');
 }
 
 const pool = mysql.createPool(poolConfig);
 
-// Verificar conexión (no es fatal si falla, se reintentará en tiempo de ejecución)
+// Verificar conexión
 pool.getConnection()
   .then(connection => {
-    console.log('✓ Conexión a MySQL exitosa');
+    console.log('✅ Conexión a MySQL: EXITOSA');
     connection.release();
   })
   .catch(err => {
-    console.warn('⚠ Advertencia: No se pudo conectar a MySQL en el arranque:', err.message);
-    console.warn('  Las conexiones se intentarán cuando se realice la primera petición');
+    console.error('❌ Conexión a MySQL: FALLIDA');
+    console.error('   Código:', err.code);
+    console.error('   Mensaje:', err.message);
+    
+    if (err.code === 'ER_ACCESS_DENIED_ERROR') {
+      console.error('   Problema: Credenciales incorrectas (usuario/contraseña)');
+    } else if (err.code === 'ER_BAD_DB_ERROR') {
+      console.error('   Problema: Base de datos no existe');
+    } else if (err.code === 'ENOTFOUND' || err.code === 'EHOSTUNREACH') {
+      console.error('   Problema: No se puede alcanzar el servidor (hostname/firewall)');
+    } else if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+      console.error('   Problema: Conexión perdida (posible firewall o timeout)');
+    }
+    console.error('   Las conexiones se reintentarán cuando se realice la primera petición');
   });
 
 module.exports = pool;
