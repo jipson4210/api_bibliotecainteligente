@@ -13,20 +13,16 @@ app.use(cors());
 app.use(express.json());
 
 // Importar controlador de usuario (Presentation Layer)
-// Los archivos están en la carpeta src/
 let userController;
 try {
-  // Cargar desde src/presentation
   userController = require('./src/presentation');
+  console.log('✓ Controlador cargado correctamente');
 } catch (e) {
-  try {
-    // Fallback: intentar desde raíz (si se reorganiza)
-    userController = require('./presentation.UserController');
-  } catch (e2) {
-    console.error('✗ Error: No se encontró el controlador');
-    console.error('Se esperaba en: ./src/presentation o ./presentation.UserController');
-    process.exit(1);
+  console.error('✗ Error al cargar el controlador:', e.message);
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Stack:', e.stack);
   }
+  process.exit(1);
 }
 
 // Usar rutas
