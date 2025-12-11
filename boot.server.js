@@ -1,6 +1,5 @@
 // DDD - Boot/Entry Point
 // Servidor Express con arquitectura DDD
-
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -59,8 +58,8 @@ app.use((err, req, res, next) => {
 
 // Iniciar servidor
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✓ Servidor corriendo en puerto ${PORT}`);
-  console.log(`✓ Health check: http://localhost:${PORT}/api/health`);
+  console.log(`✓ Servidor corriendo en puerto ${PORT}`); // CORREGIDO: usar backticks
+  console.log(`✓ Health check: http://localhost:${PORT}/api/health`); // CORREGIDO: usar backticks
 });
 
 // Timeout para keep-alive en IIS
