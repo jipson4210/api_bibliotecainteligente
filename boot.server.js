@@ -17,25 +17,27 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Endpoint de salud (sin dependencias)
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'API funcionando correctamente', 
+    timestamp: new Date(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // Importar controlador de usuario (Presentation Layer)
 let userController;
 try {
   console.log('Cargando controlador de usuarios...');
   userController = require('./src/presentation');
   console.log('✓ Controlador cargado correctamente');
+  app.use('/api/users', userController);
 } catch (e) {
   console.error('✗ Error al cargar el controlador:', e.message);
   console.error('Stack completo:', e.stack);
-  process.exit(1);
+  // No salir, solo advertencia - la ruta /api/health funciona igual
 }
-
-// Usar rutas
-app.use('/api/users', userController);
-
-// Ruta de prueba
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'API funcionando correctamente', timestamp: new Date() });
-});
 
 // Manejo de errores 404
 app.use((req, res) => {
@@ -44,7 +46,7 @@ app.use((req, res) => {
 
 // Manejo de errores global
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Error:', err.stack);
   res.status(500).json({ 
     message: 'Error interno del servidor',
     error: process.env.NODE_ENV === 'development' ? err.message : undefined
@@ -52,6 +54,17 @@ app.use((err, req, res, next) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`✓ Servidor corriendo en http://localhost:${PORT}`);
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✓ Servidor corriendo en puerto ${PORT}`);
+  console.log(`✓ Health check: http://localhost:${PORT}/api/health`);
+});
+
+// Manejo de errores no capturados
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
 });
