@@ -20,28 +20,35 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Check secret
+    - name: Create deployment package (exclude node_modules)
       run: |
-        if [ -z "${{ secrets.AZURE_PUBLISH_PROFILE }}" ]; then
-          echo "ERROR: AZURE_PUBLISH_PROFILE secret no está configurado"
-          echo "Ve a GitHub → Settings → Secrets and variables → Actions"
-          echo "Agrega AZURE_PUBLISH_PROFILE con el contenido del archivo XML de Azure"
-          exit 1
-        else
-          echo "✓ AZURE_PUBLISH_PROFILE está configurado"
-        fi
+        mkdir -p deploy
+        # Copiar archivos necesarios
+        cp -r src deploy/
+        cp boot.server.js deploy/
+        cp startup.sh deploy/
+        cp .deployment deploy/
+        cp package.json deploy/
+        cp package-lock.json deploy/
+        
+        # NO copiar node_modules - Azure lo instalará
+        # Crear un .deploymentignore
+        echo "node_modules/" > deploy/.deploymentignore
+        echo ".git/" >> deploy/.deploymentignore
+        echo "*.log" >> deploy/.deploymentignore
 
     - name: Deploy to Azure App Service
       uses: azure/webapps-deploy@v2
       with:
         app-name: 'bibliotecainteligente'
         publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
-        package: '.'
+        package: './deploy'
 
     - name: Health check
       run: |
         echo "Esperando que el app service inicie..."
         sleep 30
         curl -v https://bibliotecainteligente.azurewebsites.net/api/health || true
+
 
 
